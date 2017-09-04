@@ -1,0 +1,8 @@
+# Mac OX S
+*.DS_Store
+
+# XCode
+RigidSpheresMotion.xcodeproj/project.xcworkspace/*
+RigidSpheresMotion.xcodeproj/xcuserdata/*
+
+params/**/*.dat
