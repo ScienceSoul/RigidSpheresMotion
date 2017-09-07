@@ -10,6 +10,8 @@
 		734B83341F5A7F3800008C1D /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 734B83331F5A7F3800008C1D /* Accelerate.framework */; };
 		734B833D1F5B1E3800008C1D /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 734B833B1F5B1E3800008C1D /* main.c */; };
 		734B833E1F5B1E3800008C1D /* Utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 734B833C1F5B1E3800008C1D /* Utils.c */; };
+		734B83411F5F0CD500008C1D /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 734B83401F5F0CD500008C1D /* OpenGL.framework */; };
+		734B83431F5F0CE800008C1D /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 734B83421F5F0CE800008C1D /* GLUT.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -30,6 +32,8 @@
 		734B833B1F5B1E3800008C1D /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; };
 		734B833C1F5B1E3800008C1D /* Utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = Utils.c; path = src/Utils.c; sourceTree = "<group>"; };
 		734B833F1F5B1E4F00008C1D /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = include/Utils.h; sourceTree = "<group>"; };
+		734B83401F5F0CD500008C1D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		734B83421F5F0CE800008C1D /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				734B83431F5F0CE800008C1D /* GLUT.framework in Frameworks */,
+				734B83411F5F0CD500008C1D /* OpenGL.framework in Frameworks */,
 				734B83341F5A7F3800008C1D /* Accelerate.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,6 +71,8 @@
 		734B83321F5A7F3700008C1D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				734B83421F5F0CE800008C1D /* GLUT.framework */,
+				734B83401F5F0CD500008C1D /* OpenGL.framework */,
 				734B83331F5A7F3800008C1D /* Accelerate.framework */,
 			);
 			name = Frameworks;

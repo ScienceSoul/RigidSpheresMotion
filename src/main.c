@@ -6,34 +6,41 @@
 //  Copyright © 2017 ScienceSoul. All rights reserved.
 //
 
+
 #ifdef __APPLE__
     #include <Accelerate/Accelerate.h>
+    #include <OpenGL/gl.h>
+    #include <OpenGL/glu.h>
+    #include <GLUT/glut.h>
 #else
-    #include "cblas.h"
-    #include "cblas_f77.h"
+    #include <GL/gl.h>
+    #include <GL/glu.h>
+    #include <GL/glut.h>
 #endif
 
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#include <GLUT/glut.h>
 #include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "Utils.h"
 
 const float BOUNDARY = 2.0f;
 
-#define NBALLS      50
 #define randf()     ((float)rand()/(float)RAND_MAX)
 
+int NBSPHERES = 0;
 int rotate=0;
+
 float tm, th=0.0f; // tm measures the time
-const float gravity = 9.81f;
 const float delta_tm = 0.005f;
-const float restitution = 0.7f;
+float gravity[3] = {0.0f, 0.0f, 0.0f};
+float restitution = 0.0f;
+float sphereRadius = 0.0f;
+float totalMomentumWalls = 0.0;
+
+char detectionMethod[50];
+void (*_Nullable detectionMethodCallBack)(int n) = NULL;
 
 typedef struct sphere {
     float radius;
@@ -47,7 +54,7 @@ typedef struct sphere {
     float colors[4];
 } sphere;
 
-sphere spheres[NBALLS];
+sphere *spheres;
 
 void colorSphere(float colors[]) {
     int red = arc4random() % 256;
@@ -72,15 +79,23 @@ float MaxBound(float radius) {
 
 void init() {
     srand((int)time(NULL));
-    for (int i=0; i<NBALLS; i++) {
-        spheres[i].radius = 0.09f;
-        spheres[i].mass = spheres[i].radius; // Assume mass = radius for simplicity
+    for (int i=0; i<NBSPHERES; i++) {
+        spheres[i].radius = sphereRadius;
+        spheres[i].mass = sphereRadius;  // Assume mass = radius for simplicity
         spheres[i].x = MinBound(spheres[i].radius) + randf()*(MaxBound(spheres[i].radius)-MinBound(spheres[i].radius));
         spheres[i].y = MinBound(spheres[i].radius) + randf()*(MaxBound(spheres[i].radius)-MinBound(spheres[i].radius));
         spheres[i].z = 1.5f;
-        spheres[i].vx = -1.5f + randf() * 3.0f;
-        spheres[i].vy = -1.5f + randf() * 3.0f;
-        spheres[i].vz = -1.0f + randf() * 2.0f;
+        
+        if (gravity[0] != 0) {
+            spheres[i].vx = -1.0f + randf() * 2.0f;
+        } else spheres[i].vx = -1.5f + randf() * 3.0f;
+        if (gravity[1] != 0) {
+            spheres[i].vy = -1.0f + randf() * 2.0f;
+        } else spheres[i].vy = -1.5f + randf() * 3.0f;
+        if (gravity[2] != 0) {
+            spheres[i].vz = -1.0f + randf() * 2.0f;
+        } else spheres[i].vz = -1.5f + randf() * 3.0f;
+        
         while(1) { // Reject dark spheres
             colorSphere(spheres[i].colors);
             if (spheres[i].colors[0] >= 0.2f && spheres[i].colors[1] >= 0.2f &&
@@ -116,95 +131,92 @@ void init() {
     glLoadIdentity();
 }
 
+float distance(int x1, int x2, int y1, int y2, int z1, int z2) {
+    
+    return (sqrtf( ((x1 - x2) * (x1 - x2)) + ((y1 - y2) * ((y1 - y2))) + ((z1 - z2) * ((z1 - z2)))));
+}
+
+float magnitude(float vx, float vy, float vz) {
+    
+    return sqrtf((vx*vx) + (vy*vy) + (vz*vz));
+}
+
 void spheresUpdate(int n) {
     
-    spheres[n].vz += -gravity * delta_tm;
+    // The gravity
+    spheres[n].vx += -gravity[0] * delta_tm;
+    spheres[n].vy += -gravity[1] * delta_tm;
+    spheres[n].vz += -gravity[2] * delta_tm;
+    
     // Assuming that velocity is nearly constant (both in direction and magnitude)
     // during the time intervall delta_tm
     spheres[n].x  += spheres[n].vx * delta_tm;
     spheres[n].y  += spheres[n].vy * delta_tm;
     spheres[n].z  += spheres[n].vz * delta_tm;
     
+    bool hit1 = false;
+    bool hit2 = false;
+    bool hit3 = false;
+    
+    float v1 = magnitude(spheres[n].vx, spheres[n].vy, spheres[n].vz);
+    
     if (fabs(spheres[n].x) >= MaxBound(spheres[n].radius)) {
+        hit1 = true;
         spheres[n].vx *= -restitution;
         spheres[n].x = (spheres[n].x < 0.0f) ? MinBound(spheres[n].radius) : MaxBound(spheres[n].radius);
     }
     if (fabs(spheres[n].y) >= MaxBound(spheres[n].radius)) {
+        hit2 = true;
         spheres[n].vy *= -restitution;
         spheres[n].y = (spheres[n].y < 0.0f) ? MinBound(spheres[n].radius) : MaxBound(spheres[n].radius);
     }
     if (fabs(spheres[n].z) >= MaxBound(spheres[n].radius)) {
+        hit3 = true;
         spheres[n].vz *= -restitution;
         spheres[n].z = (spheres[n].z < 0.0f) ? MinBound(spheres[n].radius) : MaxBound(spheres[n].radius);
     }
-}
-
-float distance(int x1, int x2, int y1, int y2, int z1, int z2) {
     
-    return (sqrtf( ((x1 - x2) * (x1 - x2)) + ((y1 - y2) * ((y1 - y2))) + ((z1 - z2) * ((z1 - z2)))));
-}
-
-float timeOfClosestApproach(int i, int j, bool *collision) {
-    
-    float t = 0.0f;
-    
-    float Pa[3] = {spheres[i].x, spheres[i].y, spheres[i].z}; // Position of sphere A
-    float Pb[3] = {spheres[j].x, spheres[j].y, spheres[j].z}; // Position of sphere B
-    
-    float Va[3] = {spheres[i].vx, spheres[i].vy, spheres[i].vz}; // Velocity of sphere A
-    float Vb[3] = {spheres[j].vx, spheres[j].vy, spheres[j].vz}; // Velocity of sphere A
-    
-    float Ra = spheres[i].radius; // radius of sphere A
-    float Rb = spheres[j].radius; // radius of sphere B
-    
-    float Pab[3];
-    for (int i=0; i<3; i++) {
-        Pab[i] = Pa[i] - Pb[i];
-    }
-    
-    float Vab[3];
-    for (int i=0; i<3; i++) {
-        Vab[i] = Va[i] - Vb[i];
-    }
-    float a = cblas_sdot(3, Vab, 1, Vab, 1);
-    float b = 2.0f * cblas_sdot(3, Pab, 1, Vab, 1);
-    float c = cblas_sdot(3, Pab, 1, Pab, 1) - (Ra + Rb) * (Ra + Rb);
-    
-    // The quadratic discriminant
-    float discriminant = b * b - 4.0f * a * c;
-    
-    // Case 1:
-    // If the discriminant is negative, then there are no real roots, there is no collision.
-    // The time of closest approach is then given by the average of the imaginary roots,
-    // which is:  t = -b / 2a
-    if (discriminant < 0) {
-        t = -b / (2.0f * a);
-        *collision = false;
-    } else {
-        // Case 2 and 3:
-        // If the discriminant is zero, then there is exactly one real root, meaning that the circles just grazed each other.  If the
-        // discriminant is positive, then there are two real roots, meaning that the circles penetrate each other.  In that case, the
-        // smallest of the two roots is the initial time of impact.  We handle these two cases identically.
-        float t0 = (-b + (sqrtf(discriminant)) / (2.0f * a));
-        float t1 = (-b - (sqrtf(discriminant)) / (2.0f * a));
-        t = min(t0, t1);
+    if (hit1 || hit2 || hit3) {
+        float mv1 = v1 * spheres[n].mass;
+        float v2 = magnitude(spheres[n].vx, spheres[n].vy, spheres[n].vz);
+        float mv2 = v2 * spheres[n].mass;
         
-        // We also have to check if the time to impact is negative.  If it is negative, then that means that the collision
-        // occured in the past.  Since we're only concerned about future events, we say that no collision occurs if t < 0.
-        if (t < 0) {
-            *collision = false;
+        if (gravity[0] != 0.0f) {
+            if (hit2 || hit3) {
+                totalMomentumWalls += fabsf(mv1 - mv2);
+            }
+            if (hit1) {
+                float xx = spheres[n].x + spheres[n].vx * delta_tm;
+                if ((roundf((xx+spheres[n].radius) * 100) / 100) > (MinBound(spheres[n].radius)+spheres[n].radius)) {
+                    totalMomentumWalls += fabsf(mv1 - mv2);
+                }
+            }
+        } else if (gravity[1] != 0.0f) {
+            if (hit1 || hit3) {
+                totalMomentumWalls += fabsf(mv1 - mv2);
+            }
+            if (hit2) {
+                float yy = spheres[n].y + spheres[n].vy * delta_tm;
+                if ((roundf((yy+spheres[n].radius) * 100) / 100) > (MinBound(spheres[n].radius)+spheres[n].radius)) {
+                    totalMomentumWalls += fabsf(mv1 - mv2);
+                }
+            }
         } else {
-            *collision = true;
+            if (hit1 || hit2) {
+                totalMomentumWalls += fabsf(mv1 - mv2);
+            }
+            if (hit3) {
+                float zz = spheres[n].z + spheres[n].vz * delta_tm;
+                if ((roundf((zz+spheres[n].radius) * 100) / 100) > (MinBound(spheres[n].radius)+spheres[n].radius)) {
+                    totalMomentumWalls += fabsf(mv1 - mv2);
+                }
+            }
         }
     }
-    
-    // Finally, if the time is negative, then set it to zero, because, again, we want this function to respond only to future events.
-    if (t < 0) t = 0;
-    
-    return t;
 }
 
-void calculateNewVelocities(int i, int j) {
+
+void calculateNewVelocities1(int i, int j) {
     
     float mass1 = spheres[i].mass;
     float mass2 = spheres[j].mass;
@@ -242,8 +254,87 @@ void calculateNewVelocities(int i, int j) {
     spheres[j].z += spheres[j].vz * delta_tm;
 }
 
-void detectCollisions(int n) {
-    for (int i=0; i<NBALLS; i++) {
+void calculateNewVelocities2(int i, int j) {
+    
+    float Pa[3];
+    Pa[0] = spheres[i].x;
+    Pa[1] = spheres[i].y;
+    Pa[2] = spheres[i].z;
+    
+    float Va[3];
+    Va[0] = spheres[i].vx;
+    Va[1] = spheres[i].vy;
+    Va[2] = spheres[i].vz;
+    
+    float Pb[3];
+    Pb[0] = spheres[j].x;
+    Pb[1] = spheres[j].y;
+    Pb[2] = spheres[j].z;
+    
+    float Vb[3];
+    Vb[0] = spheres[j].vx;
+    Vb[1] = spheres[j].vy;
+    Vb[2] = spheres[j].vz;
+    
+    // First, find the normalized vector n from the center of
+    // circle1 to the center of circle2
+    float N[3];
+    for (int i=0; i<3; i++) {
+        N[i] = Pa[i] - Pb[i];
+    }
+    for (int i=0; i<3; i++) {
+        N[i] = N[i] /  magnitude(N[0], N[1], N[2]);
+    }
+    
+    // Find the length of the component of each of the movement
+    // vectors along n.
+    // a1 = v1 . n
+    // a2 = v2 . n
+#ifdef __APPLE__
+    float a1 = cblas_sdot(3, Va, 1, N, 1);
+    float a2 = cblas_sdot(3, Vb, 1, N, 1);
+#else
+    float a1 = 0.0f;
+    float a2 = 0.0f;
+    for (int i=0; i<3; i++) {
+        a1 = a1 + Va[i]*N[i];
+        a2 = a2 + Vb[i]*N[i];
+    }
+#endif
+    
+    // Using the optimized version,
+    // optimizedP =  2(a1 - a2)
+    //              -----------
+    //                m1 + m2
+    float optimizedP = (2.0f * (a1-a2)) / (spheres[i].mass + spheres[j].mass);
+    
+    // Calculate va', the new movement vector of sphere A
+    // va' = va - optimizedP * m2 * n
+    float Va_prime[3];
+    for (int i=0; i<3; i++) {
+        Va_prime[i] = Va[i] - optimizedP * spheres[j].mass * N[i];
+    }
+    // Calculate vb', the new movement vector of sphere B
+    // vb' = vb + optimizedP * m1 * n
+    float Vb_prime[3];
+    for (int i=0; i<3; i++) {
+        Vb_prime[i] = Vb[i] + optimizedP * spheres[i].mass * N[i];
+    }
+    
+    spheres[i].vx = Va_prime[0]; // + Vb_prime[0];
+    spheres[i].vy = Va_prime[1]; // + Vb_prime[1];
+    spheres[i].vz = Va_prime[2]; // + Vb_prime[2];
+    
+    spheres[j].vx = Vb_prime[0];
+    spheres[j].vy = Vb_prime[1];
+    spheres[j].vz = Vb_prime[2];
+}
+
+// Detect collision between spheres by first using AABB (axis-aligned bounding box) to check
+// if they are near each other. Then by determinig the distance between the two spheres' centers
+// and check it against the sum of the radii of the spheres, collision is detected
+void detectCollisionAABB(int n) {
+    for (int i=0; i<NBSPHERES; i++) {
         if (n != i) {
             if (spheres[n].x + spheres[n].radius + spheres[i].radius > spheres[i].x &&
                 spheres[n].x < spheres[i].x + spheres[n].radius + spheres[i].radius &&
@@ -254,20 +345,148 @@ void detectCollisions(int n) {
                 ) { //AABBs are overlapping
                 if (distance(spheres[n].x, spheres[i].x, spheres[n].y, spheres[i].y, spheres[n].z, spheres[i].z) < spheres[n].radius + spheres[i].radius) {
                     // Spheres have collided
-                    calculateNewVelocities(n, i);
+                    calculateNewVelocities2(n, i);
                 }
             }
         }
     }
 }
 
+// Detect collision between spheres by using a Dynamic-Static approach. This is done by first changing the velocity
+// frame of reference to one sphere only.
+bool detectCollisionDynamicStatic(int i, int j) {
+    
+    float Pa[3];
+    Pa[0] = spheres[i].x;
+    Pa[1] = spheres[i].y;
+    Pa[2] = spheres[i].z;
+    
+    float Va[3];
+    Va[0] = spheres[i].vx;
+    Va[1] = spheres[i].vy;
+    Va[2] = spheres[i].vz;
+    
+    float Pb[3];
+    Pb[0] = spheres[j].x;
+    Pb[1] = spheres[j].y;
+    Pb[2] = spheres[j].z;
+    
+    float Vb[3];
+    Vb[0] = spheres[j].vx;
+    Vb[1] = spheres[j].vy;
+    Vb[2] = spheres[j].vz;
+    
+    // Change frame of reference to one sphere for the velocity
+    float VV[3];
+    for (int i=0; i<3; i++) {
+        VV[i] = Va[i] - Vb[i];
+    }
+    
+    float dist = distance(Pa[0], Pb[0], Pa[1], Pb[1], Pa[2], Pb[2]);
+    float sumRadii = spheres[i].radius + spheres[j].radius;
+    dist -= sumRadii;
+    if (magnitude(VV[0], VV[1], VV[2]) < dist) {
+        return false;
+    }
+    
+    // Normalize the velocity vector
+    float N[3];
+    for (int i=0; i<3; i++) {
+        N[i] = VV[i] / magnitude(VV[0], VV[1], VV[2]);
+    }
+    
+    // Find C, the vector from the center of the sphere A
+    // to center of B
+    float C[3];
+    for (int i=0; i<3; i++) {
+        C[i] = Pb[i] - Pa[i];
+    }
+    
+    // D = N \dot C
+#ifdef __APPLE__
+    float D = cblas_sdot(3, N, 1, C, 1);
+#else
+    float D = 0.0f;
+    for (int i=0; i<3; i++) {
+        D = D + N[i]*C[i];
+    }
+#endif
+    
+    // Another early escape: make sure that A is moving towards B.
+    // If the dot product between the velocity vector and B.center - A.center
+    // is less than ot equal to O, A is not moving towards B
+    if (D <= 0) {
+        return false;
+    }
+    
+    // Find the length of vector C
+    float lengthC = magnitude(C[0], C[1], C[2]);
+    
+    double F = (lengthC * lengthC) - (D * D);
+    
+    // Escape test: if the closest that A will get to B is more than
+    // the sum of their radii, there's no way they are going to collide
+    float sumRadiiSquared = sumRadii * sumRadii;
+    if (F >= sumRadiiSquared) {
+        return false;
+    }
+    
+    // We now have F and sumRadii, two sides of a right triangle.
+    // Use these to find the third side, sqrt(T)
+    double T = sumRadiiSquared - F;
+    
+    // If there is no such right triangle with sides length of
+    // sumRadii and sqrt(f), T will probably be less than 0.
+    // Better to check now than perform a square root of a
+    // negative number.
+    if (T < 0) {
+        return false;
+    }
+    
+    // Therefore the distance the circle has to travel along
+    // velocity vector is D - sqrt(T)
+    float distanceDT = D - sqrt(T);
+    
+    // Get the magnitude of the movement vector
+    float mag = magnitude(VV[0], VV[1], VV[2]);
+    
+    // Finally, make sure that the distance A has to move
+    // to touch B is not greater than the magnitude of the
+    // velocity vector.
+    if (mag < distanceDT) {
+        return false;
+    }
+    
+    return true;
+}
+
+void collisionAABB(int n) {
+    detectCollisionAABB(n);
+}
+
+void collisionDynamicStatic(int n) {
+    
+    bool collision;
+    for (int i=0; i<NBSPHERES; i++) {
+        if (n != i) {
+            collision = detectCollisionDynamicStatic(n, i);
+            if (collision) {
+                // Spheres have collided
+                calculateNewVelocities2(n, i);
+            }
+        }
+    }
+}
+
 void update() {
+    
     tm += delta_tm;
-    for (int i=0; i<NBALLS; i++) {
+    for (int i=0; i<NBSPHERES; i++) {
         spheresUpdate(i);
     }
-    for (int i=0; i<NBALLS; i++) {
-        detectCollisions(i);
+    
+    for (int i=0; i<NBSPHERES; i++) {
+        detectionMethodCallBack(i);
     }
     
     if (rotate) {
@@ -275,6 +494,20 @@ void update() {
         if (th > 360.0f) th -= 360.0f;
     }
     glutPostRedisplay();
+}
+
+void printCharactersScene(float x, float y, char *string) {
+    
+    glColor3f(1.0, 1.0, 1.0);
+    glDisable(GL_LIGHTING);
+    glRasterPos2f(x, y);
+    int len = (int)strlen(string);
+    
+    // Display character by character
+    for (int i=0; i<len; i++) {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+    }
+    glEnable(GL_LIGHTING);
 }
 
 void drawCube(void) {
@@ -292,7 +525,7 @@ void drawScene() {
     glRotatef(th,0.0f,1.0f,0.0f);
     glRotatef(-90.0f,1.0f,0.0f,0.0f);
     drawCube();
-    for (int i=0; i<NBALLS; i++) {
+    for (int i=0; i<NBSPHERES; i++) {
         glPushMatrix();
         glTranslatef(spheres[i].x, spheres[i].y, spheres[i].z);
         glColor3f(spheres[i].colors[0], spheres[i].colors[1], spheres[i].colors[2]);
@@ -300,6 +533,9 @@ void drawScene() {
         glPopMatrix();
     }
     glPopMatrix();
+    char output[50];
+    snprintf(output, 50, "Total momentum given to walls: %f", totalMomentumWalls);
+    printCharactersScene(-2.9f, 3.3f, output);
     glutSwapBuffers();
 }
 
@@ -315,6 +551,36 @@ void mouse(int button, int state, int x, int y) {
 }
 
 int main(int argc, const char * argv[]) {
+    
+    size_t vectorSize;
+    float buff;
+    // Load the program parameters
+    if (loadParameters(gravity, &vectorSize, &buff, &sphereRadius, &restitution, detectionMethod) != 0) {
+        fatal("RigidSpheresMotion", "an error occured during reading of input parameters file.");
+    }
+    if (vectorSize != 3) {
+        fatal("RigidSpheresMotion", "incorrect dimension of input gravity vector. Should be three.");
+    }
+    
+    NBSPHERES = (int)buff;
+    fprintf(stdout, "Program parameters: \n");
+    fprintf(stdout, "Number of spheres: %d.\n", NBSPHERES);
+    fprintf(stdout, "Spheres radius: %f.\n", sphereRadius);
+    fprintf(stdout, "Coefficient of restitution: %f.\n", restitution);
+    fprintf(stdout, "Gravity vector: %f %f %f.\n", gravity[0], gravity[1], gravity[2]);
+    
+    fprintf(stdout, "Spheres collision detection method: %s.\n", detectionMethod);
+    // Set-up here the collision detection function we will use during the simulation
+    if (strcmp(detectionMethod, "AABB") == 0) {
+        detectionMethodCallBack = collisionAABB;
+    } else if (strcmp(detectionMethod, "Dynamic-Static") == 0) {
+        detectionMethodCallBack = collisionDynamicStatic;
+    } else {
+        fatal("RigidSpheresMotion", "collision detection method not recognized. Should be < AABB > or < Dynamic-Static >.");
+    }
+    
+    spheres = (sphere *)malloc(NBSPHERES * sizeof(sphere));
+    
     glutInit(&argc,(char **)argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800,800);
@@ -324,5 +590,7 @@ int main(int argc, const char * argv[]) {
     glutMouseFunc(mouse);
     init();
     glutMainLoop();
+    
+    free(spheres);
     return 0;
 }

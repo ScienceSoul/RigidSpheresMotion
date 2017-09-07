@@ -8,12 +8,15 @@
 CC = clang
 
 # Compile flags
-CFLAGS = -Wall -O3 
+CFLAGS = -Wall -O3
 
 INCLUDES = -I../include
 
-# BLAS/LAPACK (required) on macOS or use any other implementation
-#LFLAGS = -framework Accelerate 
+# OpenGL and GLUT are required, provide them here. 
+# The following is the linking for macOS. BLAS/LAPACK is also used
+LFLAGS = -framework OpenGL -framework GLUT -framework Accelerate 
+# Comment out the next line to link OpenGL and GLUT on Linux (not tested)
+#LFLAGS = -lGL -lGLU -lglut
 
 LIBS = -lm
 
@@ -35,18 +38,21 @@ MAIN = RigidSpheresMotion
 .PHONY: depend clean
 
 all:    $(MAIN)
-    @echo Program compiled
+	@echo Program compiled
 
 $(MAIN): $(OBJS)
-    $(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
 
 .c.o:
-    (CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
 
 clean:
-    $(RM) *.o *~ $(MAIN)
+	$(RM) *.o *~ $(MAIN)
 
 depend: $(SRCS)
-    makedepend $(INCLUDES) $^
+	makedepend $(INCLUDES) $^
 
 # DO NOT DELETE THIS LINE -- make depend needs it
+
+main.o: ../include/Utils.h
+Utils.o: ../include/Utils.h
