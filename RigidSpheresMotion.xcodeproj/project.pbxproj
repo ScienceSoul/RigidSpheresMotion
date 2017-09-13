@@ -34,6 +34,7 @@
 		734B833F1F5B1E4F00008C1D /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = include/Utils.h; sourceTree = "<group>"; };
 		734B83401F5F0CD500008C1D /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		734B83421F5F0CE800008C1D /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		734B83711F69A1C700008C1D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +54,7 @@
 		734B831F1F4BE38000008C1D = {
 			isa = PBXGroup;
 			children = (
+				734B83711F69A1C700008C1D /* README.md */,
 				734B83391F5B1DF200008C1D /* src */,
 				734B833A1F5B1DFB00008C1D /* include */,
 				734B83291F4BE38000008C1D /* Products */,
