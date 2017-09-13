@@ -122,19 +122,19 @@ void __attribute__((overloadable)) parseArgument(const char * _Nonnull argument,
     int idx = 0;
     *numberOfItems = 0;
     
-    fprintf(stdout, "RigidSpheresMotion: parsing the parameter %s : %s.\n", argumentName, argument);
+    fprintf(stdout, "%s: parsing the parameter %s : %s.\n", PROGRAM_NAME, argumentName, argument);
     
     size_t len = strlen(argument);
-    if (argument[0] != '{' || argument[len-1] != '}') fatal("RigidSpheresMotion", "input argument for network definition should start with <{> and end with <}>.");
+    if (argument[0] != '{' || argument[len-1] != '}') fatal(PROGRAM_NAME, "input argument for network definition should start with <{> and end with <}>.");
     
     while (argument[idx] != '}') {
         if (argument[idx] == '{') {
-            if (argument[idx +1] == ',' || argument[idx +1] == '{') fatal("RigidSpheresMotion", "syntax error <{,> or <{{> in imput argument for network definition.");
+            if (argument[idx+1] == ',' || argument[idx+1] == '{') fatal(PROGRAM_NAME, "syntax error <{,> or <{{> in imput argument for network definition.");
             idx++;
             continue;
         }
         if (argument[idx] == ',') {
-            if (argument[idx +1] == '}' || argument[idx +1] == ',') fatal("RigidSpheresMotion", "syntax error <,}> or <,,> in imput argument for network definition.");
+            if (argument[idx+1] == '}' || argument[idx+1] == ',') fatal(PROGRAM_NAME, "syntax error <,}> or <,,> in imput argument for network definition.");
             (*numberOfItems)++;
             idx++;
             continue;
@@ -153,20 +153,20 @@ void __attribute__((overloadable)) parseArgument(const char * _Nonnull argument,
     *numberOfItems = 0;
     char floatNumber[5];
     
-    fprintf(stdout, "RigidSpheresMotion: parsing the parameter %s : %s.\n", argumentName, argument);
+    fprintf(stdout, "%s: parsing the parameter %s : %s.\n", PROGRAM_NAME, argumentName, argument);
     
     size_t len = strlen(argument);
-    if (argument[0] != '{' || argument[len-1] != '}') fatal("RigidSpheresMotion", "input argument for network definition should start with <{> and end with <}>.");
+    if (argument[0] != '{' || argument[len-1] != '}') fatal(PROGRAM_NAME, "input argument for network definition should start with <{> and end with <}>.");
     
     while (1) {
         if (argument[idx] == '{') {
-            if (argument[idx+1] == ',' || argument[idx+1] == '{') fatal("RigidSpheresMotion", "syntax error <{,> or <{{> in imput argument for network definition.");
+            if (argument[idx+1] == ',' || argument[idx+1] == '{') fatal(PROGRAM_NAME, "syntax error <{,> or <{{> in imput argument for network definition.");
             idx++;
             continue;
         }
         if (argument[idx] == ',' || argument[idx] == '}') {
             if (argument[idx] == ',') {
-                if (argument[idx+1] == '}' || argument[idx+1] == ',') fatal("RigidSpheresMotion", "syntax error <,}> or <,,> in imput argument for network definition.");
+                if (argument[idx+1] == '}' || argument[idx+1] == ',') fatal(PROGRAM_NAME, "syntax error <,}> or <,,> in imput argument for network definition.");
             }
             result[*numberOfItems] = strtof(floatNumber,NULL);
             (*numberOfItems)++;
@@ -186,7 +186,7 @@ void __attribute__((overloadable)) parseArgument(const char * _Nonnull argument,
 
 int loadParameters(float * _Nonnull gravityVector, size_t * _Nonnull vectorSize, float * _Nonnull nbBalls, float * _Nonnull radius, float * _Nonnull restitution, char detectionMethod[_Nonnull]) {
     
-    // Very basic parsing of our inpute parameters file.
+    // Very basic parsing of input parameters file.
     // TODO: Needs to change that to something more flexible and with better input validation
     
     FILE *f1 = fopen("parameters.dat","r");
@@ -195,7 +195,7 @@ int loadParameters(float * _Nonnull gravityVector, size_t * _Nonnull vectorSize,
         if(!f1) {
             f1 = fopen("../params/parameters.dat","r");
             if(!f1) {
-                fprintf(stdout,"RigidSpheresMotion: can't find the input parameters file.\n");
+                fprintf(stdout,"%s: can't find the input parameters file.\n", PROGRAM_NAME);
                 return -1;
             }
         }
@@ -203,17 +203,25 @@ int loadParameters(float * _Nonnull gravityVector, size_t * _Nonnull vectorSize,
     
     char string[256];
     int lineCount = 1;
-    do {
+    int empty = 0;
+    while(1) {
         fscanf(f1,"%s\n", string);
         
         if (lineCount == 1 && string[0] != '{') {
-            fatal("RigidSpheresMotion", "syntax error in the file for the input parameters.");
+            fatal(PROGRAM_NAME, "syntax error in the file for the input parameters.");
         } else if (lineCount == 1) {
             lineCount++;
             continue;
-        };
+        } else if(string[0] == '\0') {
+            empty++;
+            if (empty > 1000) {
+                fatal(PROGRAM_NAME, "syntax error in the file for the input keys. File should end with <}>");
+            }
+            continue;
+        }
         
-        if (string[0] == '!') continue;
+        if (string[0] == '!') continue; // Comment line
+        if (string[0] == '}') break;    // End of file
         
         if (lineCount == 2) {
             *nbBalls = strtof(string, NULL);
@@ -231,7 +239,7 @@ int loadParameters(float * _Nonnull gravityVector, size_t * _Nonnull vectorSize,
             strcpy(detectionMethod, string);
         }
         lineCount++;
-    } while (string[0] != '}');
+    };
     
     return 0;
 }

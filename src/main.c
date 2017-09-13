@@ -556,10 +556,10 @@ int main(int argc, const char * argv[]) {
     float buff;
     // Load the program parameters
     if (loadParameters(gravity, &vectorSize, &buff, &sphereRadius, &restitution, detectionMethod) != 0) {
-        fatal("RigidSpheresMotion", "an error occured during reading of input parameters file.");
+        fatal(PROGRAM_NAME, "an error occured during reading of input parameters file.");
     }
     if (vectorSize != 3) {
-        fatal("RigidSpheresMotion", "incorrect dimension of input gravity vector. Should be three.");
+        fatal(PROGRAM_NAME, "incorrect dimension of input gravity vector. Should be three.");
     }
     
     NBSPHERES = (int)buff;
@@ -576,7 +576,7 @@ int main(int argc, const char * argv[]) {
     } else if (strcmp(detectionMethod, "Dynamic-Static") == 0) {
         detectionMethodCallBack = collisionDynamicStatic;
     } else {
-        fatal("RigidSpheresMotion", "collision detection method not recognized. Should be < AABB > or < Dynamic-Static >.");
+        fatal(PROGRAM_NAME, "collision detection method not recognized. Should be < AABB > or < Dynamic-Static >.");
     }
     
     spheres = (sphere *)malloc(NBSPHERES * sizeof(sphere));

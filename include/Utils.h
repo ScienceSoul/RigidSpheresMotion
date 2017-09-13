@@ -15,6 +15,8 @@
 
 #endif /* Utils_h */
 
+#define PROGRAM_NAME "RigidSpheresMotion"
+
 int __attribute__((overloadable)) max(int x, int y);
 int __attribute__((overloadable)) max(int x, int y, int z);
 float __attribute__((overloadable)) max(float x, float y);
