@@ -330,8 +330,8 @@ void calculateNewVelocities2(int i, int j) {
     spheres[j].vz = Vb_prime[2];
 }
 
-// Detect collision between spheres by first using AABB (axis-aligned bounding box) to check
-// if they are near each other. Then by determinig the distance between the two spheres' centers
+// Detect collision between two spheres by first using AABB (axis-aligned bounding box) to check
+// if they are near each other. Then by determinig the distance between the spheres' centers
 // and check it against the sum of the radii of the spheres, collision is detected
 void detectCollisionAABB(int n) {
     for (int i=0; i<NBSPHERES; i++) {
@@ -352,7 +352,7 @@ void detectCollisionAABB(int n) {
     }
 }
 
-// Detect collision between spheres by using a Dynamic-Static approach. This is done by first changing the velocity
+// Detect collision between two spheres using a more precise Dynamic-Static approach. This is done by first changing the velocity
 // frame of reference to one sphere only.
 bool detectCollisionDynamicStatic(int i, int j) {
     
