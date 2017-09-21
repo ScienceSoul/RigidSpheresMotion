@@ -37,7 +37,7 @@ const float delta_tm = 0.005f;
 float gravity[3] = {0.0f, 0.0f, 0.0f};
 float restitution = 0.0f;
 float sphereRadius = 0.0f;
-float totalMomentumWalls = 0.0;
+float totalMomentumWalls;
 
 char detectionMethod[50];
 void (*_Nullable detectionMethodCallBack)(int n) = NULL;
@@ -78,6 +78,7 @@ float MaxBound(float radius) {
 }
 
 void init() {
+    totalMomentumWalls = 0.0f;
     srand((int)time(NULL));
     for (int i=0; i<NBSPHERES; i++) {
         spheres[i].radius = sphereRadius;
