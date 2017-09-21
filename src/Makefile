@@ -54,5 +54,3 @@ depend: $(SRCS)
 
 # DO NOT DELETE THIS LINE -- make depend needs it
 
-main.o: ../include/Utils.h
-Utils.o: ../include/Utils.h
