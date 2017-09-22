@@ -448,7 +448,7 @@ bool detectCollisionDynamicStatic(int i, int j) {
     // velocity vector is D - sqrt(T)
     float distanceDT = D - sqrt(T);
     
-    // Get the magnitude of the movement vector
+    // Get the magnitude of the velocity vector
     float mag = magnitude(VV[0], VV[1], VV[2]);
     
     // Finally, make sure that the distance A has to move
