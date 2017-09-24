@@ -17,7 +17,7 @@ Two methods of collision detection are supported:
 * Language: C
 * Compiler: Clang/LLVM
 * Platform: masOS/Linux 
-* Required library(ies): OpenGL, GLUT and BLAS/LAPACK
+* Required library(ies): OpenGL, GLUT and BLAS/LAPACK (masOS only)
 
 Compilation:
 
