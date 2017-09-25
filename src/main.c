@@ -511,11 +511,7 @@ void printCharactersScene(float x, float y, char *string) {
 }
 
 void drawCube(void) {
-    float colors[3];
-    colors[0] = 1.0f;
-    colors[1] = 1.0f;
-    colors[2] = 1.0f;
-    glColor3f(colors[0], colors[1], colors[2]);
+    glColor3f(1.0f, 1.0f, 1.0f);
     glutWireCube(4.0);
 }
 
