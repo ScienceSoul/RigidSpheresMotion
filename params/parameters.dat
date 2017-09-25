@@ -1,0 +1,17 @@
+{
+!Number!Of!Spheres
+50
+!
+!Spheres!Radius
+0.09
+!
+!Coefficient!Of!Restitution
+0.7
+!
+!Gravity!Vector
+{0.0,0.0,9.81}
+!
+!Collision!Detection!Method
+Dynamic-Static
+}
+
