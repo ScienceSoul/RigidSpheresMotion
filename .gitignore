@@ -4,5 +4,3 @@
 # XCode
 RigidSpheresMotion.xcodeproj/project.xcworkspace/*
 RigidSpheresMotion.xcodeproj/xcuserdata/*
-
-params/**/*.dat
