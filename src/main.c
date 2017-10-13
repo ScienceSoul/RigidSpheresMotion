@@ -286,7 +286,7 @@ void calculateNewVelocities2(int i, int j) {
         N[i] = N[i] /  magnitude(N[0], N[1], N[2]);
     }
     
-    // Find the length of the component of each of the movement
+    // Find the length of the component of each of the velocity
     // vectors along n.
     // a1 = v1 . n
     // a2 = v2 . n
@@ -321,9 +321,9 @@ void calculateNewVelocities2(int i, int j) {
         Vb_prime[i] = Vb[i] + optimizedP * spheres[i].mass * N[i];
     }
     
-    spheres[i].vx = Va_prime[0]; // + Vb_prime[0];
-    spheres[i].vy = Va_prime[1]; // + Vb_prime[1];
-    spheres[i].vz = Va_prime[2]; // + Vb_prime[2];
+    spheres[i].vx = Va_prime[0];
+    spheres[i].vy = Va_prime[1];
+    spheres[i].vz = Va_prime[2];
     
     spheres[j].vx = Vb_prime[0];
     spheres[j].vy = Vb_prime[1];
@@ -382,6 +382,8 @@ bool detectCollisionDynamicStatic(int i, int j) {
         VV[i] = Va[i] - Vb[i];
     }
     
+    // Early check, the velocity vector length be at least the distance between
+    // the centers of the circles minus the radius of each
     float dist = distance(Pa[0], Pb[0], Pa[1], Pb[1], Pa[2], Pb[2]);
     float sumRadii = spheres[i].radius + spheres[j].radius;
     dist -= sumRadii;
@@ -415,6 +417,8 @@ bool detectCollisionDynamicStatic(int i, int j) {
     // Another early escape: make sure that A is moving towards B.
     // If the dot product between the velocity vector and B.center - A.center
     // is less than ot equal to O, A is not moving towards B
+    // D is the distance between center of A and the closest point on velocity
+    // vector to B
     if (D <= 0) {
         return false;
     }
@@ -422,10 +426,14 @@ bool detectCollisionDynamicStatic(int i, int j) {
     // Find the length of vector C
     float lengthC = magnitude(C[0], C[1], C[2]);
     
+    // Find the length of the third side of the triangle fomer by C and D
+    // sqrt(F) is then the length from the center of B to the closest point to B on
+    // velocity vector V
     double F = (lengthC * lengthC) - (D * D);
     
     // Escape test: if the closest that A will get to B is more than
     // the sum of their radii, there's no way they are going to collide
+    // Equivalent to test the condition sqrt(F) <= A.radius + B.radius
     float sumRadiiSquared = sumRadii * sumRadii;
     if (F >= sumRadiiSquared) {
         return false;
